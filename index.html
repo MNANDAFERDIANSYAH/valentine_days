@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>💘 Labirin Cinta — Valentine's Day</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600;700&display=swap');
+
+:root{
+  --rose:#c8193e; --rose2:#e8294c; --rose3:#ff6b8a; --rose4:#ffb3c6;
+  --cream:#fdf6ee; --parchment:#f5e6d0; --parchment2:#ede0c8;
+  --ink:#2c1810; --ink2:#4a2820;
+  --gold:#c8922a; --goldb:#e8b84b; --goldc:#f5d88a;
+  --deep:#0d0008; --deep2:#1a000f; --deep3:#2d0018;
+  --wall:#8b0a3c; --wall2:#6b0830;
+  --shadow:rgba(0,0,0,.5);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;}
+
+body{
+  font-family:'Lora',serif;
+  background:var(--deep);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+
+/* ═══ FLOATING PETALS BG ═══ */
+#petal-layer{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.petal{
+  position:absolute;top:-40px;
+  animation:petalFall linear infinite;
+  opacity:0;font-size:1rem;
+}
+@keyframes petalFall{
+  0%  {transform:translateY(0) rotate(0deg) translateX(0);opacity:0;}
+  8%  {opacity:.7;}
+  90% {opacity:.4;}
+  100%{transform:translateY(105vh) rotate(400deg) translateX(40px);opacity:0;}
+}
+
+/* ═══ SCREEN SYSTEM ═══ */
+.screen{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:10;
+  transition:opacity .65s cubic-bezier(.4,0,.2,1),
+             transform .65s cubic-bezier(.4,0,.2,1);
+}
+.screen.off{opacity:0;pointer-events:none;transform:scale(.97);}
+
+/* ═══════════════════════════════════
+   INTRO SCREEN
+═══════════════════════════════════ */
+#s-intro{background:radial-gradient(ellipse at 50% 25%,#5a0028,#1a000f 60%,#0d0008);}
+
+.intro-wrap{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:0 20px;
+}
+
+.intro-heart{
+  font-size:5rem;
+  filter:drop-shadow(0 0 28px #ff6b8a) drop-shadow(0 0 60px rgba(232,41,76,.5));
+  animation:pulse 1.4s ease-in-out infinite;
+  margin-bottom:8px;
+}
+@keyframes pulse{0%,100%{transform:scale(1);}35%{transform:scale(1.18);}65%{transform:scale(1.08);}}
+
+.intro-card{
+  background:rgba(255,255,255,.06);
+  backdrop-filter:blur(22px);
+  border:1.5px solid rgba(255,160,190,.22);
+  border-radius:24px;
+  padding:44px 52px 40px;
+  max-width:480px;width:92vw;
+  box-shadow:0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04);
+  animation:cardBob 4s ease-in-out infinite;
+}
+@keyframes cardBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+.i-title{
+  font-family:'Dancing Script',cursive;
+  font-size:2.9rem;color:#fff;
+  text-shadow:0 0 40px #ff6b8a,0 2px 12px rgba(0,0,0,.4);
+  line-height:1.1;margin-bottom:6px;
+}
+.i-sub{
+  font-family:'Lora',serif;font-style:italic;
+  font-size:.95rem;color:rgba(255,195,215,.85);
+  line-height:1.75;margin-bottom:6px;
+}
+.i-tip{
+  font-size:.78rem;color:rgba(255,160,185,.55);
+  margin-bottom:28px;line-height:1.6;
+}
+
+.btn-main{
+  display:inline-block;cursor:pointer;border:none;
+  background:linear-gradient(135deg,var(--goldc),var(--goldb),var(--gold));
+  color:#3a0a00;
+  font-family:'Dancing Script',cursive;
+  font-size:1.65rem;font-weight:700;
+  padding:13px 46px;border-radius:50px;
+  box-shadow:0 8px 30px rgba(200,146,42,.45),
+             0 0 0 2.5px rgba(255,255,255,.18);
+  transition:transform .2s,box-shadow .2s;
+  letter-spacing:.3px;
+}
+.btn-main:hover{transform:scale(1.07) translateY(-3px);box-shadow:0 16px 44px rgba(200,146,42,.6);}
+
+/* ═══════════════════════════════════
+   GAME SCREEN
+═══════════════════════════════════ */
+#s-game{
+  background:radial-gradient(ellipse at 50% 10%,#380018,#15000c 65%,#0d0008);
+  gap:10px;padding:12px 8px 8px;
+}
+
+/* HUD */
+.hud{
+  display:flex;align-items:center;justify-content:space-between;
+  width:min(520px,96vw);z-index:3;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,140,170,.18);
+  border-radius:50px;padding:8px 22px;
+  backdrop-filter:blur(12px);
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.hud-item{
+  display:flex;align-items:center;gap:5px;
+  color:rgba(255,195,215,.9);font-size:.9rem;font-weight:600;
+}
+.hud-item b{color:#fff;font-size:1rem;}
+.hud-lbl{font-size:.72rem;color:rgba(255,160,185,.5);font-weight:400;margin-left:1px;}
+.hud-title{
+  font-family:'Dancing Script',cursive;
+  font-size:1.3rem;color:#ff9eb5;
+}
+
+/* Canvas */
+.canvas-shell{
+  position:relative;border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 3px var(--rose2),
+             0 0 50px rgba(232,41,76,.45),
+             0 24px 60px rgba(0,0,0,.65);
+}
+#gc{display:block;}
+
+/* Overlay inside canvas */
+#ov{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:rgba(10,0,18,.75);
+  backdrop-filter:blur(7px);
+  border-radius:14px;z-index:20;
+  opacity:0;pointer-events:none;
+  transition:opacity .4s;
+}
+#ov.on{opacity:1;pointer-events:all;}
+.ov-msg{
+  font-family:'Dancing Script',cursive;
+  font-size:2.4rem;color:#fff;
+  text-shadow:0 0 28px #ff6b8a;
+  margin-bottom:8px;text-align:center;padding:0 16px;
+}
+.ov-hint{font-size:.9rem;color:rgba(255,200,215,.8);margin-bottom:22px;text-align:center;padding:0 16px;}
+
+/* D-Pad */
+.dpad{
+  display:grid;
+  grid-template-columns:repeat(3,50px);
+  grid-template-rows:repeat(3,50px);
+  gap:4px;z-index:3;margin-top:4px;
+}
+.dp{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,140,170,.2);
+  border-radius:11px;font-size:1.35rem;
+  cursor:pointer;user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+  transition:background .12s,transform .1s;
+}
+.dp:active,.dp.on{background:rgba(232,41,76,.38);transform:scale(.9);}
+.dp-x{background:transparent;border:none;pointer-events:none;}
+
+/* ═══════════════════════════════════
+   BOOK MODAL  (win screen)
+═══════════════════════════════════ */
+#book-modal{
+  position:fixed;inset:0;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.7);
+  backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;
+  transition:opacity .5s;
+  padding:16px;
+}
+#book-modal.open{opacity:1;pointer-events:all;}
+
+/* The Book */
+.book{
+  position:relative;
+  width:min(720px,98vw);
+  max-height:92vh;
+  display:flex;
+  transform:rotateX(6deg) scale(.88);
+  transform-style:preserve-3d;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1);
+  filter:drop-shadow(0 40px 80px rgba(0,0,0,.8));
+  overflow:hidden;
+  border-radius:4px 16px 16px 4px;
+}
+#book-modal.open .book{transform:rotateX(0deg) scale(1);}
+
+/* Spine */
+.book-spine{
+  width:28px;min-width:28px;
+  background:linear-gradient(180deg,var(--wall),var(--rose2) 50%,var(--wall));
+  border-radius:6px 0 0 6px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset -4px 0 8px rgba(0,0,0,.4), 4px 0 12px rgba(0,0,0,.3);
+  flex-shrink:0;
+}
+.spine-text{
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  font-family:'Dancing Script',cursive;
+  font-size:.75rem;color:rgba(255,220,230,.6);
+  letter-spacing:2px;text-transform:uppercase;
+}
+
+/* Pages */
+.book-pages{
+  flex:1;overflow:hidden;
+  background:var(--parchment);
+  position:relative;
+  border-radius:0 12px 12px 0;
+}
+
+/* Page texture lines */
+.book-pages::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    transparent 0px,
+    transparent 31px,
+    rgba(180,140,100,.18) 31px,
+    rgba(180,140,100,.18) 32px
+  );
+  pointer-events:none;z-index:0;
+}
+
+/* Left margin red line */
+.book-pages::after{
+  content:'';position:absolute;
+  left:52px;top:0;bottom:0;width:1.5px;
+  background:rgba(200,25,62,.25);
+  z-index:1;pointer-events:none;
+}
+
+/* Page content scroll */
+.page-content{
+  position:relative;z-index:2;
+  padding:36px 40px 32px 64px;
+  overflow-y:auto;max-height:92vh;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(200,25,62,.3) transparent;
+}
+.page-content::-webkit-scrollbar{width:4px;}
+.page-content::-webkit-scrollbar-thumb{background:rgba(200,25,62,.3);border-radius:4px;}
+
+/* Book header */
+.book-header{text-align:center;margin-bottom:28px;padding-bottom:18px;
+  border-bottom:1.5px solid rgba(180,120,80,.3);}
+
+.book-icon{font-size:3rem;display:block;margin-bottom:4px;
+  animation:hbk 1.6s ease-in-out infinite;}
+@keyframes hbk{0%,100%{transform:scale(1);}45%{transform:scale(1.12);}}
+
+.book-main-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.85rem;font-style:italic;
+  color:var(--rose);
+  text-shadow:0 1px 4px rgba(200,25,62,.2);
+  line-height:1.2;margin-bottom:4px;
+}
+.book-date{
+  font-family:'Lora',serif;font-style:italic;
+  font-size:.82rem;color:rgba(80,40,30,.55);
+  letter-spacing:.5px;
+}
+
+/* Paragraph styles */
+.letter-drop{
+  float:left;
+  font-family:'Playfair Display',serif;
+  font-size:3.6rem;line-height:.8;
+  color:var(--rose);
+  margin:4px 6px -4px 0;
+  text-shadow:1px 2px 6px rgba(200,25,62,.25);
+}
+
+.book-para{
+  font-family:'Lora',serif;
+  font-size:.96rem;line-height:2;
+  color:var(--ink);
+  margin-bottom:20px;
+  text-align:justify;
+  clear:both;
+}
+
+.book-para.italic{font-style:italic;color:var(--ink2);}
+
+.book-verse{
+  text-align:center;
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:1.05rem;
+  color:var(--rose);
+  line-height:2;
+  margin:24px 0;
+  padding:18px 24px;
+  border-left:3px solid var(--rose3);
+  border-right:3px solid var(--rose3);
+  background:rgba(200,25,62,.05);
+  border-radius:4px;
+}
+
+.book-sign{
+  text-align:right;
+  font-family:'Dancing Script',cursive;
+  font-size:1.7rem;
+  color:var(--rose);
+  margin-top:24px;
+  padding-top:16px;
+  border-top:1px solid rgba(180,120,80,.2);
+}
+
+.book-hearts{
+  text-align:center;
+  font-size:1.4rem;
+  margin:16px 0 4px;
+  letter-spacing:6px;
+  animation:heartRow 1.8s ease-in-out infinite;
+}
+@keyframes heartRow{0%,100%{opacity:.7;}50%{opacity:1;}}
+
+/* Decorative corner flourishes */
+.flourish{
+  text-align:center;
+  font-size:1rem;
+  color:rgba(200,25,62,.3);
+  margin:8px 0;
+  letter-spacing:8px;
+}
+
+/* Close button */
+.book-footer{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;flex-wrap:wrap;
+  padding:20px 40px 28px 64px;
+  background:var(--parchment2);
+  border-top:1.5px solid rgba(180,120,80,.25);
+  position:relative;z-index:2;
+}
+
+.btn-close-book{
+  display:inline-flex;align-items:center;gap:8px;
+  cursor:pointer;border:none;
+  background:linear-gradient(135deg,#d63a5a,#e8294c,#c8193e);
+  color:#fff;
+  font-family:'Dancing Script',cursive;
+  font-size:1.4rem;font-weight:700;
+  padding:12px 36px;border-radius:50px;
+  box-shadow:0 8px 28px rgba(200,25,62,.45),
+             0 0 0 2px rgba(255,255,255,.12);
+  transition:transform .2s,box-shadow .2s;
+}
+.btn-close-book:hover{transform:scale(1.06) translateY(-2px);box-shadow:0 14px 38px rgba(200,25,62,.6);}
+
+.btn-replay{
+  display:inline-flex;align-items:center;gap:6px;
+  cursor:pointer;border:none;
+  background:transparent;
+  color:rgba(80,30,20,.6);
+  font-family:'Lora',serif;font-style:italic;
+  font-size:.9rem;
+  padding:10px 20px;border-radius:50px;
+  border:1.5px solid rgba(180,120,80,.35);
+  transition:all .2s;
+}
+.btn-replay:hover{background:rgba(180,120,80,.12);color:var(--ink);border-color:rgba(180,120,80,.6);}
+
+/* Confetti */
+.conf{position:fixed;top:-30px;z-index:200;pointer-events:none;
+  animation:cfDrop linear forwards;}
+@keyframes cfDrop{
+  0%  {transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(108vh) rotate(600deg);opacity:0;}
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:520px){
+  .intro-card{padding:28px 18px 32px;}
+  .i-title{font-size:2.2rem;}
+  .page-content{padding:28px 22px 24px 36px;}
+  .book-pages::after{left:34px;}
+  .book-footer{padding:16px 22px 22px 36px;}
+  .book-main-title{font-size:1.4rem;}
+  .book-para{font-size:.88rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── PETAL BACKGROUND ─── -->
+<div id="petal-layer"></div>
+
+<!-- ══════════════════════════ INTRO ══════════════════════════ -->
+<div class="screen" id="s-intro">
+  <div class="intro-wrap">
+    <div class="intro-heart">💘</div>
+    <div class="intro-card">
+      <div class="i-title">Labirin Cinta</div>
+      <div style="font-family:'Dancing Script',cursive;font-size:1.2rem;color:#ff9eb5;margin-bottom:14px;">
+        ✦ Happy Valentine's Day ✦
+      </div>
+      <p class="i-sub">
+        Temukan jalan menuju hati yang menantimu~<br>
+        Kumpulkan semua 💝 lalu raih 🏆 kekasihmu!
+      </p>
+      <p class="i-tip">
+        ⌨️ WASD / Tombol Panah &nbsp;·&nbsp; 📱 D-Pad di bawah
+      </p>
+      <button class="btn-main" onclick="startGame()">✨ Mulai Petualangan ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ GAME ══════════════════════════ -->
+<div class="screen off" id="s-game">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-item">💝 <b id="hud-h">0</b>/<b id="hud-t">0</b><span class="hud-lbl">hati</span></div>
+    <div class="hud-title">Labirin Cinta 💘</div>
+    <div class="hud-item">⏱ <b id="hud-s">0</b>s</div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-shell" id="cshell">
+    <canvas id="gc"></canvas>
+    <!-- inner overlay (hint) -->
+    <div id="ov">
+      <div class="ov-msg" id="ov-msg">💝 Kumpulkan dulu semua hati!</div>
+      <div class="ov-hint" id="ov-hint">Masih ada hati yang belum kamu temukan~</div>
+      <button class="btn-main" id="ov-btn" onclick="dismissOv()">Oke, lanjut! 💕</button>
+    </div>
+  </div>
+
+  <!-- D-Pad -->
+  <div class="dpad">
+    <div class="dp-x"></div>
+    <div class="dp" id="dp-u" onpointerdown="dpp('up')"    onpointerup="dpr()" onpointercancel="dpr()">⬆️</div>
+    <div class="dp-x"></div>
+    <div class="dp" id="dp-l" onpointerdown="dpp('left')"  onpointerup="dpr()" onpointercancel="dpr()">⬅️</div>
+    <div class="dp-x"></div>
+    <div class="dp" id="dp-r" onpointerdown="dpp('right')" onpointerup="dpr()" onpointercancel="dpr()">➡️</div>
+    <div class="dp-x"></div>
+    <div class="dp" id="dp-d" onpointerdown="dpp('down')"  onpointerup="dpr()" onpointercancel="dpr()">⬇️</div>
+    <div class="dp-x"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ BOOK MODAL ══════════════════════════ -->
+<div id="book-modal">
+  <div class="book">
+    <!-- Spine -->
+    <div class="book-spine">
+      <div class="spine-text">Surat Cinta</div>
+    </div>
+
+    <!-- Pages -->
+    <div class="book-pages">
+      <div class="page-content">
+        <!-- Header -->
+        <div class="book-header">
+          <span class="book-icon">💌</span>
+          <div class="book-main-title">Untuk Kamu yang Aku Cinta</div>
+          <div class="book-date">14 Februari — Hari Kasih Sayang</div>
+        </div>
+
+        <div class="flourish">✦ ✦ ✦</div>
+
+        <!-- Para 1 -->
+        <p class="book-para">
+          <span class="letter-drop">S</span>
+          ejak pertama kali aku melihatmu, ada sesuatu yang berubah dalam diriku.
+          Seperti halaman kosong yang tiba-tiba menemukan tintanya, hidupku
+          terasa jauh lebih berwarna bersamamu. Kamu adalah cerita terindah
+          yang pernah aku baca, dan aku ingin terus membalik setiap halamannya.
+        </p>
+
+        <!-- Verse -->
+        <div class="book-verse">
+          "Cintaku untukmu bukan sekedar kata-kata,<br>
+          ia adalah napas yang mengalir setiap saat,<br>
+          denyut yang tak pernah berhenti,<br>
+          dan rindu yang selalu datang kembali."
+        </div>
+
+        <!-- Para 2 -->
+        <p class="book-para">
+          Di hari yang istimewa ini, aku ingin kamu tahu bahwa setiap detik
+          bersamamu adalah hadiah yang paling berharga. Tawamu adalah melodi
+          favoritku, senyummu adalah cahaya yang menerangi hariku, dan
+          kehadiranmu adalah rumah yang selalu ingin aku pulang ke sana.
+        </p>
+
+        <!-- Para 3 italic -->
+        <p class="book-para italic">
+          Ketika dunia terasa berat dan langkah menjadi lambat, aku tahu
+          bahwa selama aku bisa memegang tanganmu, semuanya akan baik-baik
+          saja. Kamu adalah alasan terbaikku untuk terus tersenyum setiap pagi.
+        </p>
+
+        <div class="flourish">✾ ✾ ✾</div>
+
+        <!-- Para 4 -->
+        <p class="book-para">
+          Aku tidak berjanji untuk menjadi sempurna, tetapi aku berjanji
+          untuk selalu berusaha menjadi yang terbaik untukmu. Aku berjanji
+          untuk hadir di setiap suka dan dukamu, untuk menjadi bahumu saat
+          kamu perlu bersandar, dan untuk mencintaimu apa adanya — kemarin,
+          hari ini, dan selamanya.
+        </p>
+
+        <!-- Verse 2 -->
+        <div class="book-verse">
+          "Jika cinta adalah labirin,<br>
+          maka kamu adalah jalan yang selalu aku temukan~<br>
+          Di setiap belokan, di setiap tikungan,<br>
+          hatiku selalu menuju kamu."
+        </div>
+
+        <!-- Para 5 -->
+        <p class="book-para">
+          Selamat Hari Valentine, sayangku. Semoga setiap hari kita bisa
+          menciptakan kenangan-kenangan indah yang akan kita ceritakan
+          kembali di masa tua nanti — sambil tersenyum, sambil bersyukur,
+          karena kita pernah dan terus saling menemukan.
+        </p>
+
+        <div class="book-hearts">💕 💝 💕 💝 💕</div>
+
+        <!-- Signature -->
+        <div class="book-sign">
+          Dengan segenap cinta,<br>
+          Kekasihmu ✦
+        </div>
+      </div>
+
+      <!-- Footer with close button -->
+      <div class="book-footer">
+        <button class="btn-close-book" onclick="closeBook()">
+          💌 Tutup Surat
+        </button>
+        <button class="btn-replay" onclick="replayGame()">
+          🔄 Main lagi
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   PETAL BACKGROUND
+═══════════════════════════════════════════ */
+const layer = document.getElementById('petal-layer');
+const petals = ['🌸','💕','✨','🌹','💫','⭐','💗','🌺'];
+function spawnPetal(){
+  const el = document.createElement('div');
+  el.className = 'petal';
+  el.textContent = petals[Math.floor(Math.random()*petals.length)];
+  el.style.left = Math.random()*100+'vw';
+  el.style.fontSize = (.6+Math.random()*.9)+'rem';
+  const dur = 7+Math.random()*9;
+  el.style.animationDuration = dur+'s';
+  el.style.animationDelay   = Math.random()*4+'s';
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(),(dur+4.5)*1000);
+}
+setInterval(spawnPetal,600);
+for(let i=0;i<16;i++) spawnPetal();
+
+/* ═══════════════════════════════════════════
+   MAZE — Recursive Backtracker
+═══════════════════════════════════════════ */
+const COLS=13, ROWS=11;
+const N=1,S=2,E=4,W=8, VISITED=16;
+let CELL=36;
+let grid=[];
+
+function opp(d){ return d===N?S:d===S?N:d===E?W:E; }
+function nbr(r,c,d){
+  if(d===N)return[r-1,c]; if(d===S)return[r+1,c];
+  if(d===E)return[r,c+1]; if(d===W)return[r,c-1];
+}
+function shuf(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function carve(r,c){
+  grid[r][c]|=VISITED;
+  for(const d of shuf([N,S,E,W])){
+    const[nr,nc]=nbr(r,c,d);
+    if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!(grid[nr][nc]&VISITED)){
+      grid[r][c]|=d; grid[nr][nc]|=opp(d); carve(nr,nc);
+    }
+  }
+}
+
+/* ── State ── */
+let player={r:0,c:0};
+const goal={r:ROWS-1,c:COLS-1};
+let hearts=[],collected=0,total=0;
+let seconds=0,timerInt=null;
+let active=false,blocked=false;
+let dpDir=null,dpTmr=null;
+
+/* ── Canvas setup ── */
+const gc = document.getElementById('gc');
+const ctx = gc.getContext('2d');
+let rafId=null;
+
+function sizeCanvas(){
+  const maxW=Math.min(window.innerWidth-16, 520);
+  const maxH=Math.min(window.innerHeight-200, 440);
+  CELL=Math.floor(Math.min(maxW/COLS, maxH/ROWS));
+  gc.width  = COLS*CELL;
+  gc.height = ROWS*CELL;
+  document.getElementById('cshell').style.width = gc.width+'px';
+}
+
+function buildLevel(){
+  grid=[];
+  for(let r=0;r<ROWS;r++) grid.push(new Array(COLS).fill(0));
+  carve(0,0);
+
+  hearts=[];collected=0;
+  const N_HEARTS=8;
+  const taken=new Set(['0,0',`${goal.r},${goal.c}`]);
+  while(hearts.length<N_HEARTS){
+    const r=Math.floor(Math.random()*ROWS);
+    const c=Math.floor(Math.random()*COLS);
+    const k=`${r},${c}`;
+    if(taken.has(k))continue;
+    taken.add(k);hearts.push({r,c,done:false});
+  }
+  total=N_HEARTS;
+}
+
+/* ── Draw ── */
+const CLR_BG   ='#160010';
+const CLR_WALL ='#8b0a3c';
+const CLR_GLOW ='rgba(200,20,80,.7)';
+const CLR_PATH ='rgba(70,0,40,.4)';
+
+function draw(){
+  ctx.fillStyle=CLR_BG; ctx.fillRect(0,0,gc.width,gc.height);
+
+  /* subtle grid tint */
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const x=c*CELL,y=r*CELL;
+      ctx.fillStyle=CLR_PATH; ctx.fillRect(x+1,y+1,CELL-2,CELL-2);
+    }
+  }
+
+  /* walls */
+  ctx.strokeStyle=CLR_WALL; ctx.lineWidth=3.5; ctx.lineCap='round';
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const x=c*CELL,y=r*CELL,g=grid[r][c];
+      ctx.shadowColor=CLR_GLOW; ctx.shadowBlur=7;
+      if(!(g&N)){ln(x,y,x+CELL,y);}
+      if(!(g&S)){ln(x,y+CELL,x+CELL,y+CELL);}
+      if(!(g&E)){ln(x+CELL,y,x+CELL,y+CELL);}
+      if(!(g&W)){ln(x,y,x,y+CELL);}
+      ctx.shadowBlur=0;
+    }
+  }
+
+  /* border */
+  ctx.strokeStyle='#c8193e'; ctx.lineWidth=5;
+  ctx.shadowColor='rgba(232,41,76,.6)'; ctx.shadowBlur=14;
+  ctx.strokeRect(2,2,gc.width-4,gc.height-4);
+  ctx.shadowBlur=0;
+
+  /* goal */
+  const gx=goal.c*CELL+CELL/2, gy=goal.r*CELL+CELL/2;
+  const all=collected===total;
+  ctx.shadowColor=all?'#f5d88a':'rgba(255,255,255,.3)';
+  ctx.shadowBlur=all?22:8;
+  emoji(all?'🏆':'🔒',gx,gy,Math.round(CELL*.7));
+  ctx.shadowBlur=0;
+
+  /* hearts */
+  const t=Date.now()/700;
+  for(const h of hearts){
+    if(h.done)continue;
+    const hx=h.c*CELL+CELL/2, hy=h.r*CELL+CELL/2;
+    const sc=1+.12*Math.sin(t+h.r*3+h.c);
+    ctx.save(); ctx.translate(hx,hy); ctx.scale(sc,sc);
+    ctx.shadowColor='#ff6b8a'; ctx.shadowBlur=16;
+    emoji('💝',0,0,Math.round(CELL*.62));
+    ctx.restore(); ctx.shadowBlur=0;
+  }
+
+  /* player */
+  drawPlayer();
+
+  if(active) rafId=requestAnimationFrame(draw);
+}
+
+function ln(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function emoji(e,x,y,sz){
+  ctx.font=sz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(e,x,y);
+}
+
+function drawPlayer(){
+  const px=player.c*CELL+CELL/2, py=player.r*CELL+CELL/2;
+  /* aura */
+  const aura=ctx.createRadialGradient(px,py,0,px,py,CELL*.58);
+  aura.addColorStop(0,'rgba(255,107,138,.28)');
+  aura.addColorStop(1,'transparent');
+  ctx.fillStyle=aura;
+  ctx.beginPath();ctx.arc(px,py,CELL*.58,0,Math.PI*2);ctx.fill();
+  /* figure */
+  ctx.shadowColor='rgba(255,200,220,.9)'; ctx.shadowBlur=18;
+  emoji('👫',px,py,Math.round(CELL*.75));
+  ctx.shadowBlur=0;
+}
+
+/* ── Move ── */
+function move(dir){
+  if(!active||blocked)return;
+  const{r,c}=player; const g=grid[r][c];
+  let nr=r,nc=c;
+  if(dir==='up'   &&(g&N))nr--;
+  if(dir==='down' &&(g&S))nr++;
+  if(dir==='right'&&(g&E))nc++;
+  if(dir==='left' &&(g&W))nc--;
+  if(nr===r&&nc===c)return;
+  player={r:nr,c:nc};
+
+  /* collect heart */
+  const h=hearts.find(h=>!h.done&&h.r===nr&&h.c===nc);
+  if(h){h.done=true;collected++;updHUD();}
+
+  /* reach goal */
+  if(nr===goal.r&&nc===goal.c){
+    if(collected<total){
+      showOv(`💝 Hati masih kurang ${total-collected}!`,`Kumpulkan dulu semua hati untukku ya~ 🌹`);
+    } else {
+      winGame();
+    }
+  }
+}
+
+/* ── HUD ── */
+function updHUD(){
+  document.getElementById('hud-h').textContent=collected;
+  document.getElementById('hud-t').textContent=total;
+  document.getElementById('hud-s').textContent=seconds;
+}
+
+/* ── Overlay ── */
+function showOv(msg,hint){
+  blocked=true;
+  document.getElementById('ov-msg').textContent=msg;
+  document.getElementById('ov-hint').textContent=hint;
+  document.getElementById('ov').classList.add('on');
+}
+function dismissOv(){
+  document.getElementById('ov').classList.remove('on');
+  blocked=false;
+}
+
+/* ── Timer ── */
+function startTimer(){
+  clearInterval(timerInt); seconds=0; updHUD();
+  timerInt=setInterval(()=>{seconds++;updHUD();},1000);
+}
+
+/* ── Start game ── */
+function startGame(){
+  document.getElementById('s-intro').classList.add('off');
+  document.getElementById('s-game' ).classList.remove('off');
+  sizeCanvas(); buildLevel(); updHUD();
+  active=true; blocked=false;
+  startTimer();
+  draw();
+}
+
+/* ── Win ── */
+function winGame(){
+  active=false; clearInterval(timerInt);
+  if(rafId) cancelAnimationFrame(rafId);
+  fireConfetti();
+  setTimeout(()=>openBook(),500);
+}
+
+/* ── Book modal ── */
+function openBook(){
+  document.getElementById('book-modal').classList.add('open');
+}
+function closeBook(){
+  document.getElementById('book-modal').classList.remove('open');
+  /* go back to intro */
+  setTimeout(()=>{
+    document.getElementById('s-game').classList.add('off');
+    document.getElementById('s-intro').classList.remove('off');
+  },400);
+}
+function replayGame(){
+  document.getElementById('book-modal').classList.remove('open');
+  setTimeout(()=>{
+    if(rafId) cancelAnimationFrame(rafId);
+    sizeCanvas(); buildLevel(); updHUD();
+    active=true; blocked=false;
+    startTimer(); draw();
+  },400);
+}
+
+/* ── Keyboard ── */
+const KMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
+            w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+window.addEventListener('keydown',e=>{
+  const dir=KMAP[e.key];
+  if(dir){e.preventDefault();move(dir);}
+  if(e.key==='Escape')closeBook();
+});
+
+/* ── D-Pad ── */
+const dpMap={up:'dp-u',down:'dp-d',left:'dp-l',right:'dp-r'};
+function dpp(dir){
+  dpr();
+  move(dir);
+  document.getElementById(dpMap[dir])?.classList.add('on');
+  dpDir=dir; dpTmr=setInterval(()=>move(dir),155);
+}
+function dpr(){
+  if(dpTmr){clearInterval(dpTmr);dpTmr=null;}
+  if(dpDir) document.getElementById(dpMap[dpDir])?.classList.remove('on');
+  dpDir=null;
+}
+document.addEventListener('pointerup',dpr);
+document.addEventListener('pointercancel',dpr);
+
+/* ── Confetti ── */
+const CF=['💝','💖','🌹','🍫','✨','💕','🌸','💫','⭐','🎀','💌','🌺'];
+function fireConfetti(){
+  const total=55;
+  for(let i=0;i<total;i++){
+    const el=document.createElement('div');
+    el.className='conf';
+    el.textContent=CF[Math.floor(Math.random()*CF.length)];
+    el.style.left=Math.random()*100+'vw';
+    el.style.fontSize=(1+Math.random()*1.4)+'rem';
+    const dur=2.2+Math.random()*3;
+    el.style.animationDuration=dur+'s';
+    el.style.animationDelay  =Math.random()*1.8+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),(dur+2)*1000);
+  }
+}
+
+/* ── Resize ── */
+window.addEventListener('resize',()=>{
+  if(active||blocked){sizeCanvas();}
+});
+</script>
+</body>
+</html>
